@@ -1,0 +1,8 @@
+ 1988  ls
+ 1989  time python3 numbers.py
+ 1990  nano
+ 1991  ls
+ 1992  chmod +x numbers.sh
+ 1993  time python3 numbers.py 
+ 1994  time ./numbers.sh
+ 1995  history > cmds.log

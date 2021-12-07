@@ -1,0 +1,137 @@
+T.K. Bui | CS 185C | Worksheet 9, due 12/02/2021
+======================================================================================================================
+
+Script started on 2021-12-07 00:14:24+00:00 [TERM="screen" TTY="/dev/pts/1" COLUMNS="93" LINES="51"]
+----------------------------------------------------------------------------------------------------------------------
+1) Put the Python program in the same location as your amazon file on your server (you can use scp or sftp). Then run 
+   it as follows (you might need to change the name of the amazon file in the script, if your file is named differently).
+
+bui@f6linuxA7:~$ ls
+amazon_reviews_us_Books_v1_02.tsv  datamash-1.3.tar.gz  weka-3-8-5-azul-zulu-linux.zip
+assignments                        numbers.py           wekafiles
+bin                                share                worksheets
+datamash-1.3                       weka-3-8-5           ws10.txt
+
+bui@f6linuxA7:~$ time python3 numbers.py
+min 0 max 15835 avg 9.33467921636312
+
+real	0m12.063s
+user	0m10.649s
+sys	0m1.178s
+
+EXPLANATION: I had already transferred the .py file from my local computer to the server, and then I ran it using
+the given command in the assignment.
+
+----------------------------------------------------------------------------------------------------------------------
+2) Write a bash shell script "numbers.sh" that uses awk to do the exact same thing. You may hardcode the amazon input 
+   filename in your script, so it doesn't have to be passed as a parameter (same as in the Python script).
+
+bui@f6linuxA7:~$ nano
+
+----- SCRIPT: NUMBERS.SH -----
+
+#!/bin/bash
+
+# this is a shell script that gets the min, max, and avg helpfulness values
+# (column 9) of the amazon file.
+
+# variables
+file="amazon_reviews_us_Books_v1_02.tsv";
+
+# PROCESS:
+# 1) get only the helpfulness column from the amazon file
+# 2) sort the column
+# 3) now we iterate through each row of this single column --
+#    since it's sorted, the first row is the min and the last row is the max.
+#    we'll keep adding each row/value to a running sum and increment a counter
+#    for each value we add to the sum, then use those numbers to get the avg.
+awk -F "\t" 'NR > 1 {print $9}' $file | sort -n | awk '
+
+ {if (NR==1) min=$1; }
+ {if (NR==NR) max=$1;}
+ {sum_values += $1; total_values++;}
+
+ END {
+  avg = sum_values / total_values;
+  {printf "min %s max %s avg %.14f\n", min, max, avg}
+ }
+'
+
+------------------------------
+
+bui@f6linuxA7:~$ ls
+amazon_reviews_us_Books_v1_02.tsv  numbers.py                      wekafiles
+assignments                        numbers.sh                      worksheets
+bin                                share                           ws10.txt
+datamash-1.3                       weka-3-8-5
+datamash-1.3.tar.gz                weka-3-8-5-azul-zulu-linux.zip
+
+bui@f6linuxA7:~$ chmod +x numbers.sh
+
+EXPLANATION: I got the helpfulness column, sorted it, and then iterated through each value in the column
+to sum up all the values. I kept a counter of how many values were added so I could compute the average.
+Since we iterate through each row of the singular column, I set the min to be the first row and the max
+to be the last row. This part took me a while to finish the assignment because initially I had a script
+that worked but was twice as INefficient, but I finally got a more efficient and working script, which 
+is what is shown above this explanation. For reference, I have pasted the inefficient original solution
+at the bottom of this .txt file to show the changes.
+
+----------------------------------------------------------------------------------------------------------------------
+3) Use time to evaluate the runtimes of both the Python program and your shell script on the same amazon customer 
+   reviews input file.
+
+bui@f6linuxA7:~$ time python3 numbers.py 
+min 0 max 15835 avg 9.33467921636312
+
+real	0m12.044s
+user	0m10.680s
+sys	0m1.131s
+
+bui@f6linuxA7:~$ time ./numbers.sh
+min 0 max 15835 avg 9.33467921636312
+
+real	0m20.704s
+user	0m22.210s
+sys	0m0.823s
+
+----------------------------------------------------------------------------------------------------------------------
+4) Do you think the Python program or the shell script runs faster on your input file?
+
+EXPLANATION: Yes, since the Python program has consistently finished in about 12 seconds on the amazon file, while 
+when I have repeatedly run my shell script outside of the screen capture, it always finishes in about 20 seconds.
+
+----------------------------------------------------------------------------------------------------------------------
+OLD SCRIPT FOR NUMBERS.SH:
+
+#!/bin/bash
+
+# this is a shell script that gets the min, max, and avg helpfulness values
+# (column 9) of the amazon file.
+
+# variables
+file="amazon_reviews_us_Books_v1_02.tsv";
+total_reviews_checked=$(echo "`wc -l < amazon_reviews_us_Books_v1_02.tsv` - 1" | bc);
+
+# get all of the helpfulness values and sort them, then put into this
+# variable as a string separated by spaces
+list_all_values=`awk -F "\t" 'NR > 1 {print $9}' $file | sort -n`;
+
+# the min and max are the first and last values of the retrieved string
+min=`echo $list_all_values | awk '{print $1}'`;
+max=`echo $list_all_values | awk '{print $NF}'`;
+
+# calculate the avg: sum all helpfulness values and divide by $total_reviews_checked
+total_values=`echo $list_all_values | awk 'BEGIN { sum=0 }
+{ for (i=1; i<=NF;i++) sum+=$i; }
+END { print sum }'`;
+
+avg=`echo "scale=14; $total_values / $total_reviews_checked" | bc`;
+
+echo "min $min max $max avg $avg";
+
+======================================================================================================================
+bui@f6linuxA7:~$ history > cmds.log
+
+bui@f6linuxA7:~$ exit
+
+Script done on 2021-12-07 00:16:58+00:00 [COMMAND_EXIT_CODE="0"]
